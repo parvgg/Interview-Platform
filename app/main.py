@@ -2,12 +2,13 @@ from fastapi import FastAPI
 from app.database import engine
 from app.api.interview import router as interview_router
 
-# 🟢 THE BULLETPROOF FIX: Import the actual model class directly
-from app.models.models import Session as SessionModel
+# 🟢 THE DEFINITIVE FIX: Import the exact Base instance your models live on
+from app.models.models import Base
 
-# Bind the engine directly to the model's own metadata registry.
-# This completely bypasses any "duplicate Base class" confusion!
-SessionModel.metadata.create_all(bind=engine)
+# This ensures every single table registered in your models file is created on boot
+print("🛠️ Connecting to cloud database and generating tables...")
+Base.metadata.create_all(bind=engine)
+print("✅ Database tables synced successfully!")
 
 app = FastAPI(title="Interview AI Coach")
 
