@@ -4,7 +4,7 @@ import plotly.graph_objects as go
 
 # --- Config ---
 st.set_page_config(page_title="AI Interview Coach", layout="wide", page_icon="🎙️")
-API_URL = "https://interview-api-backend.onrender.com/"
+API_URL = "https://interview-api-backend.onrender.com/api"
 
 # --- Premium Custom CSS (Dark/Red Brutalist Theme) ---
 st.markdown("""
