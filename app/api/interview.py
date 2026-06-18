@@ -62,6 +62,11 @@ async def analyze_interview(
         shutil.copyfileobj(audio.file, buffer)
 
     try:
+        # 🟢 LAZY RUNTIME FIX: Force table creation out of model metadata on request
+        from app.database import engine
+        from app.models.models import Session as SessionModel
+        SessionModel.metadata.create_all(bind=engine)
+
         # 1. Cloud-Native Transcription via Gemini (Zero local memory used!)
         print("☁️ Uploading audio to Gemini Cloud...")
         audio_gemini_file = client.files.upload(file=file_path)
@@ -125,7 +130,11 @@ async def analyze_interview(
 @router.get("/sessions")
 def list_sessions(db: DBSession = Depends(get_db)):
     """Get all past sessions for the dashboard."""
+    # 🟢 LAZY RUNTIME FIX: Force table creation right before we run the query
+    from app.database import engine
     from app.models.models import Session as SessionModel
+    SessionModel.metadata.create_all(bind=engine)
+
     sessions = db.query(SessionModel).order_by(SessionModel.started_at.desc()).all()
     return [
         {
