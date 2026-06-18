@@ -4,18 +4,8 @@ Interview AI Coach is a cloud-native, full-stack platform designed to help job s
 🛠️ The Tech Stack & Architecture
 The application is explicitly designed with a decoupled, stateless compute layer and a persistent cloud storage layer to maximize resource efficiency on cloud tiers.
 
-Plaintext
- ┌────────────────┐       HTTP Requests       ┌───────────────┐
- │ Streamlit App  │ ────────────────────────> │  FastAPI API  │
- │   (Frontend)   │ <──────────────────────── │   (Backend)   │
- └────────────────┘       JSON Analytics      └───────────────┘
-                                                      │
-                            ┌─────────────────────────┼─────────────────────────┐
-                            ▼                                                   ▼
-                ┌───────────────────────┐                               ┌───────────────┐
-                │   Google Gemini API   │                               │ Neon Serverless │
-                │ (Cloud Transcription) │                               │ (PostgreSQL)  │
-                └───────────────────────┘                               └───────────────┘
+<img width="464" height="163" alt="image" src="https://github.com/user-attachments/assets/0dcdb330-d621-41d9-b3c2-0674ae1918a0" />
+
 Frontend: Built an interactive data dashboard using Streamlit.
 
 Backend: Engineered an asynchronous REST API using FastAPI.
