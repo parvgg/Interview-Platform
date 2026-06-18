@@ -7,3 +7,6 @@ google-genai
 python-dotenv
 pydantic
 textblob
+requests
+streamlit
+plotly
