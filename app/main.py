@@ -1,5 +1,7 @@
 from fastapi import FastAPI
 from app.api.interview import router as interview_router
+
+import app.models.models
 Base.metadata.create_all(bind=engine)
 app = FastAPI(title="AI Interview Intelligence Platform")
 
