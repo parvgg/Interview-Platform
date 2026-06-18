@@ -73,7 +73,7 @@ async def analyze_interview(
 
         print("📝 Transcribing audio...")
         response = client.models.generate_content(
-            model="gemini-2.5-flash-lite",
+            model="gemini-2.5-pro",
             contents=[
                 audio_gemini_file,
                 "Please provide a highly accurate, word-for-word transcript of this audio file. Do not include any explanations or metadata, just the transcript text."
