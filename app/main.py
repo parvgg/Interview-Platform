@@ -2,13 +2,13 @@ from fastapi import FastAPI
 from app.database import engine
 from app.api.interview import router as interview_router
 
-# 🟢 THE DEFINITIVE FIX: Import the exact Base instance your models live on
-from app.models.models import Base
+# 🟢 TARGET THE MODEL DIRECTLY: Import the exact class your app queries
+from app.models.models import Session as SessionModel
 
-# This ensures every single table registered in your models file is created on boot
-print("🛠️ Connecting to cloud database and generating tables...")
-Base.metadata.create_all(bind=engine)
-print("✅ Database tables synced successfully!")
+# Look directly at this model's metadata registry and force-create it in Postgres
+print("🛠️ Direct-building tables from SessionModel schema...")
+SessionModel.metadata.create_all(bind=engine)
+print("✅ Database tables successfully mapped!")
 
 app = FastAPI(title="Interview AI Coach")
 
