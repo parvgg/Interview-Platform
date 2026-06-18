@@ -1,3 +1,7 @@
+import nltk
+# Dynamically download the missing punctuation data on startup
+nltk.download('punkt_tab')
+
 from textblob import TextBlob
 
 def analyze_text(text: str) -> dict:
@@ -19,6 +23,6 @@ def analyze_text(text: str) -> dict:
     return {
         "word_count": len(words),
         "sentence_count": len(sentences),
-        "sentiment_polarity": round(blob.sentiment.polarity, 2), # -1.0 to 1.0 (Negative to Positive)
-        "sentiment_subjectivity": round(blob.sentiment.subjectivity, 2) # 0.0 to 1.0 (Objective to Subjective)
+        "sentiment_polarity": round(blob.sentiment.polarity, 2),
+        "sentiment_subjectivity": round(blob.sentiment.subjectivity, 2)
     }
