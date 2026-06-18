@@ -4,8 +4,9 @@ import uuid
 from fastapi import APIRouter, UploadFile, File, HTTPException, Form, Depends
 from sqlalchemy.orm import Session as DBSession
 from app.database import get_db
-from app.services.transcription import transcribe_audio
-from app.services.audio_analysis import analyze_audio, count_filler_words
+from google import genai
+
+# We only import the lightweight text-based services now!
 from app.services.nlp_analysis import analyze_text
 from app.services.scoring import score_answer
 from app.services.roadmap import generate_roadmap
@@ -13,8 +14,36 @@ from app.services.persistence import save_analysis_result
 
 router = APIRouter(prefix="/api", tags=["interview"])
 
+# Initialize Gemini Client
+client = genai.Client(api_key=os.getenv("GEMINI_API_KEY"))
+
 UPLOAD_DIR = "uploads"
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+
+def count_filler_words_safe(text: str) -> dict:
+    """A lightweight text-based filler word counter that doesn't require heavy audio libraries."""
+    fillers = ["um", "uh", "like", "you know", "basically", "literally"]
+    text_lower = text.lower().replace(".", "").replace(",", "")
+    words = text_lower.split()
+    
+    breakdown = {}
+    total = 0
+    
+    # Check single words
+    for w in words:
+        if w in fillers:
+            breakdown[w] = breakdown.get(w, 0) + 1
+            total += 1
+            
+    # Check multi-word phrases
+    for f in ["you know"]:
+        count = text_lower.count(f)
+        if count > 0:
+            breakdown[f] = breakdown.get(f, 0) + count
+            total += count
+            
+    return {"total": total, "breakdown": breakdown}
+
 
 @router.post("/analyze")
 async def analyze_interview(
@@ -33,18 +62,47 @@ async def analyze_interview(
         shutil.copyfileobj(audio.file, buffer)
 
     try:
-        transcript = transcribe_audio(file_path)
+        # 1. Cloud-Native Transcription via Gemini (Zero local memory used!)
+        print("☁️ Uploading audio to Gemini Cloud...")
+        audio_gemini_file = client.files.upload(file=file_path)
 
-        audio_features = analyze_audio(file_path)
-        filler_data = count_filler_words(transcript)
-        audio_features["filler_word_count"] = filler_data["total"]
-        audio_features["filler_words_breakdown"] = filler_data["breakdown"]
+        print("📝 Transcribing audio...")
+        response = client.models.generate_content(
+            model="gemini-2.5-flash",
+            contents=[
+                audio_gemini_file,
+                "Please provide a highly accurate, word-for-word transcript of this audio file. Do not include any explanations or metadata, just the transcript text."
+            ]
+        )
+        transcript = response.text
 
+        # Clean up the file from Google's servers
+        try:
+            client.files.delete(name=audio_gemini_file.name)
+        except Exception as e:
+            print(f"Cleanup warning: {e}")
+
+        # 2. Lightweight Audio Features (Bypassing librosa)
+        word_count = len(transcript.split())
+        duration_estimate = word_count / 2.5  # Rough estimate based on 150 wpm
+        filler_data = count_filler_words_safe(transcript)
+        
+        audio_features = {
+            "duration_secs": duration_estimate,
+            "speaking_rate_wpm": 150.0, # Safe baseline
+            "pause_count": 0,           # Safely disabled for free tier
+            "pitch_variance": 0.0,      # Safely disabled for free tier
+            "avg_pitch_hz": 0.0,        # Safely disabled for free tier
+            "filler_word_count": filler_data["total"],
+            "filler_words_breakdown": filler_data["breakdown"]
+        }
+
+        # 3. Standard Text Processing
         nlp_features = analyze_text(transcript)
         scores = score_answer(question, transcript)
         roadmap = generate_roadmap(scores, audio_features, nlp_features)
 
-        # Save everything to PostgreSQL
+        # 4. Save to PostgreSQL
         saved = save_analysis_result(
             db, question, transcript, audio_features, nlp_features, scores, roadmap
         )
